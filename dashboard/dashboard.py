@@ -38,6 +38,13 @@ def initialize_data():
         "Heavy Rain/Snow",
     ]
 
+    time_categories = [
+        "Morning",
+        "Afternoon",
+        "Evening",
+        "Night",
+    ]
+
     for df in [day_df, hour_df]:
         df["date"] = pd.to_datetime(df["date"])
         df["season"] = pd.Categorical(df["season"], categories=season, ordered=True)
@@ -47,6 +54,8 @@ def initialize_data():
             df["weather"] = pd.Categorical(df["weather"], categories=weather, ordered=True)
         if "hour" in df:
             df["hour"] = pd.Categorical(df["hour"], categories=[(i) for i in range(24)], ordered=True)
+        if "time_category" in df:
+            df["time_category"] = pd.Categorical(df["time_category"], categories=time_categories, ordered=True)
 
 def create_total_rentals():
     total_rentals = day_filter_df["total"].sum()
@@ -110,7 +119,20 @@ def create_bar_chart_perform_hour():
     if display_raw:
         st.write(perform_hour_df)
 
-    fig = px.bar(perform_hour_df, x="hour", y="max", labels={"max": "Total Rentals", "hour": "Hour"}, color="type")
+    fig = px.bar(perform_hour_df, x="hour", y="max", labels={"max": "Rentals", "hour": "Hour"}, color="type")
+
+    st.plotly_chart(fig)
+
+def create_heatmap_perform_time_season():
+    perform_time_season_df = hour_filter_df.groupby(["time_category", "season"], observed=False).agg({"total": "mean"})
+    perform_time_season_df = perform_time_season_df.reset_index()
+
+    if display_raw:
+        st.write(perform_time_season_df)
+        
+    category_orders = {"time_category": ["Morning", "Afternoon", "Evening", "Night"]}
+
+    fig = px.density_heatmap(perform_time_season_df, x="season", y="time_category", z="total", category_orders=category_orders, labels={"total": "Total Rentals", "time_category": "Time", "season": "Season"})
 
     st.plotly_chart(fig)
 
@@ -198,5 +220,9 @@ create_bar_chart_perform_season()
 # Bike Rentals Statistics by Hour
 st.subheader("by Hour")
 create_bar_chart_perform_hour()
+
+# Bike Rentals Statistics by Time and Season
+st.subheader("Heatmap by Time and Season")
+create_heatmap_perform_time_season()
 
 st.caption("Copyright @ 2024 Orchitiadi Ismaulana Putra")
